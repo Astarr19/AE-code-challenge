@@ -38,7 +38,7 @@ export const App = () => {
 
   const Page = () => {
     if(account) {
-      return <AccountDashboard account={account} signOut={signOut}/>
+      return <AccountDashboard account={account} setAccount={setAccount} signOut={signOut}/>
     } else {
       return <SignIn 
         signIn={signIn}

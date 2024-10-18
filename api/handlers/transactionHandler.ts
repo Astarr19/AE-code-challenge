@@ -3,6 +3,19 @@ import { getAccount } from "./accountHandler";
 
 export const withdrawal = async (accountID: string, amount: number) => {
   const account = await getAccount(accountID);
+  const newDailyTotal = parseFloat(account.daily_limit) + amount;
+  if (newDailyTotal > 400) {
+    throw new Error(`Transaction exceeds daily withdrawal limit of $400: $${newDailyTotal}/$400`);
+  }
+  
+  await query(`
+    INSERT INTO transactions
+      (amount, transaction_date, type, account_number)
+    VALUES
+      ($1, NOW(), 'withdrawal', $2);`,
+      [amount, accountID]
+  );
+
   account.amount -= amount;
   const res = await query(`
     UPDATE accounts
@@ -20,7 +33,17 @@ export const withdrawal = async (accountID: string, amount: number) => {
 
 export const deposit = async (accountID: string, amount: number) => {
   const account = await getAccount(accountID);
-  account.amount += amount;
+
+  // Update transactions table before updating account
+  await query(`
+    INSERT INTO transactions
+      (amount, transaction_date, type, account_number)
+    VALUES
+      ($1, NOW(), 'deposit', $2);`,
+      [amount, accountID]
+  );
+
+  account.amount += amount; 
   const res = await query(`
     UPDATE accounts
     SET amount = $1 
